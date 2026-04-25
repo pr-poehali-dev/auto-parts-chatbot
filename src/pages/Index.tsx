@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import BarcodeScanner from "@/components/BarcodeScanner";
 
 const API = "https://functions.poehali.dev/99a37d06-488c-4467-b254-1515ba02267d";
 
@@ -32,10 +33,29 @@ export default function Index() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [notification, setNotification] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanHighlight, setScanHighlight] = useState<number | null>(null);
 
   const notify = (text: string, type: "success" | "error" = "success") => {
     setNotification({ text, type });
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleScanned = async (code: string) => {
+    setShowScanner(false);
+    setSearch(code);
+    const res = await fetch(`${API}?search=${encodeURIComponent(code)}`);
+    const data = await res.json();
+    const found = data.products || [];
+    setProducts(found);
+    setLoading(false);
+    if (found.length > 0) {
+      setScanHighlight(found[0].id);
+      notify(`Найден товар: ${found[0].name}`);
+      setTimeout(() => setScanHighlight(null), 3000);
+    } else {
+      notify(`Товар с кодом «${code}» не найден`, "error");
+    }
   };
 
   const fetchProducts = async (q = "") => {
@@ -129,13 +149,22 @@ export default function Index() {
             <span className="text-border">|</span>
             <span className="text-xs text-muted-foreground uppercase tracking-widest">Каталог товаров</span>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded hover:opacity-90 transition-opacity"
-          >
-            <Icon name="Plus" size={15} />
-            Добавить товар
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowScanner(true)}
+              className="flex items-center gap-2 border border-border text-foreground text-sm font-medium px-4 py-2 rounded hover:bg-muted transition-colors"
+            >
+              <Icon name="ScanLine" size={15} className="text-primary" />
+              Сканировать
+            </button>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded hover:opacity-90 transition-opacity"
+            >
+              <Icon name="Plus" size={15} />
+              Добавить товар
+            </button>
+          </div>
         </div>
       </header>
 
@@ -219,7 +248,7 @@ export default function Index() {
                 products.map((p, i) => (
                   <tr
                     key={p.id}
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors group"
+                    className={`border-b border-border/50 hover:bg-muted/30 transition-colors group ${scanHighlight === p.id ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : ""}`}
                     style={{ animationDelay: `${i * 30}ms` }}
                   >
                     <td className="px-5 py-4">
@@ -281,6 +310,14 @@ export default function Index() {
           </table>
         </div>
       </main>
+
+      {/* Сканер штрихкода */}
+      {showScanner && (
+        <BarcodeScanner
+          onDetected={handleScanned}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
 
       {/* Форма добавления / редактирования */}
       {showForm && (
