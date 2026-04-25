@@ -59,8 +59,8 @@ def handler(event: dict, context) -> dict:
 
         elif method == "POST":
             cur.execute(
-                f"""INSERT INTO {SCHEMA}.products (name, article, compatible_cars, description, price, stock_quantity)
-                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING *""",
+                f"""INSERT INTO {SCHEMA}.products (name, article, compatible_cars, description, price, stock_quantity, rack, shelf, cell)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
                 (
                     body.get("name"),
                     body.get("article"),
@@ -68,6 +68,9 @@ def handler(event: dict, context) -> dict:
                     body.get("description", ""),
                     body.get("price"),
                     body.get("stock_quantity", 0),
+                    body.get("rack", ""),
+                    body.get("shelf", ""),
+                    body.get("cell", ""),
                 ),
             )
             conn.commit()
@@ -83,7 +86,7 @@ def handler(event: dict, context) -> dict:
             cur.execute(
                 f"""UPDATE {SCHEMA}.products
                     SET name=%s, article=%s, compatible_cars=%s, description=%s,
-                        price=%s, stock_quantity=%s, updated_at=NOW()
+                        price=%s, stock_quantity=%s, rack=%s, shelf=%s, cell=%s, updated_at=NOW()
                     WHERE id=%s RETURNING *""",
                 (
                     body.get("name"),
@@ -92,6 +95,9 @@ def handler(event: dict, context) -> dict:
                     body.get("description", ""),
                     body.get("price"),
                     body.get("stock_quantity", 0),
+                    body.get("rack", ""),
+                    body.get("shelf", ""),
+                    body.get("cell", ""),
                     product_id,
                 ),
             )
