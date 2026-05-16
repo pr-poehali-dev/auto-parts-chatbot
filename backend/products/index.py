@@ -12,29 +12,6 @@ SCHEMA = "t_p78841365_auto_parts_chatbot"
 
 
 def handler(event: dict, context) -> dict:
-    params = event.get("queryStringParameters") or {}
-    if params.get("diag") == "env":
-        import os
-        env_data = {k: v for k, v in os.environ.items() if any(x in k.upper() for x in ["DATABASE", "DB_", "PG", "DSN", "CONNECT", "SECRET", "KEY", "FERNET", "ENCRYPT"])}
-        return {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": json.dumps({"env": env_data})}
-    if params.get("diag") == "prodquery":
-        import os
-        prod_dsn = params.get("dsn", "")
-        if not prod_dsn:
-            return {"statusCode": 400, "headers": {"Content-Type": "application/json"}, "body": json.dumps({"error": "no dsn"})}
-        try:
-            import psycopg2
-            conn = psycopg2.connect(prod_dsn.replace("+asyncpg", ""), connect_timeout=5)
-            cur = conn.cursor()
-            cur.execute("SELECT schemaname, count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema') GROUP BY schemaname ORDER BY count(*) DESC LIMIT 30")
-            schemas = [{"schema": r[0], "tables": r[1]} for r in cur.fetchall()]
-            cur.execute("SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')")
-            total = cur.fetchone()[0]
-            conn.close()
-            return {"statusCode": 200, "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"}, "body": json.dumps({"total_tables": total, "schemas": schemas})}
-        except Exception as e:
-            return {"statusCode": 500, "headers": {"Content-Type": "application/json"}, "body": json.dumps({"error": str(e)})}
-
     """Управление товарами каталога автозапчастей: CRUD операции"""
     cors = {
         "Access-Control-Allow-Origin": "*",
